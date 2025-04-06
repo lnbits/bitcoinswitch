@@ -80,7 +80,7 @@ sh build-installer.sh
 ```
 start preview
 ```console
-cd installer
+cd hardware-installer
 http-server -p 8080
 ```
 
