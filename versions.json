@@ -1,7 +1,8 @@
 {
   "name": "bitcoinSwitch",
   "devices": [
-    "esp32"
+    "esp32",
+    "tdisplay"
   ],
   "versions": [
     "v0.1.1",

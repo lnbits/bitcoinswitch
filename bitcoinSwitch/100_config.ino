@@ -1,26 +1,21 @@
-// do not change the version manually or move the #define it will be replaced during release
-#define VERSION "v1.0.0"
+// IMPORTANT: do not change the version manually or move the
+// #define it will be replaced during release
+#define VERSION "v0.0.0"
 
-// uncomment if you dont want to use the configuration file
-//#define HARDCODED
-
-// time in seconds for configurator to send /delete-file
-// so the device boots in configuration mode
-#define BOOTUP_TIMEOUT 3
+#define BOOTUP_TIMEOUT 3 // seconds
 #define CONFIG_FILE "/elements.json"
 
+// uncomment if you dont want to use the configuration file
+// #define HARDCODED
+
 // device specific configuration / defaults
-#define CONFIG_SSID "my_wifi_ssid"
-#define CONFIG_PASSWORD "my_wifi_password"
-#define CONFIG_DEVICE_STRING ""
-// Invoice/read key for the LNbits wallet you want to watch,
-#define CONFIG_THRESHOLD_INKEY ""
-// In sats
-#define CONFIG_THRESHOLD_AMOUNT ""
-// GPIO pin
-#define CONFIG_THRESHOLD_PIN ""
-// Time to turn pin on
-#define CONFIG_THRESHOLD_TIME ""
+#define CONFIG_SSID "wifissid"
+#define CONFIG_PASSWORD "wifipass"
+#define CONFIG_DEVICE_STRING "wss://demo.b1tco1n.org/api/v1/ws/XXXXXXXXXXXXXXXXXXXXXX"
+#define CONFIG_THRESHOLD_INKEY ""  // Invoice/read key of LNbits wallet
+#define CONFIG_THRESHOLD_AMOUNT ""  // In sats
+#define CONFIG_THRESHOLD_PIN ""  // GPIO pin
+#define CONFIG_THRESHOLD_TIME "" // Time to turn pin on
 
 #ifdef HARDCODED
 void setupConfig(){
@@ -33,8 +28,13 @@ void setupConfig(){
     Serial.println("Device string: " + config_device_string);
     config_threshold_inkey = CONFIG_THRESHOLD_INKEY;
     Serial.println("Threshold inkey: " + config_threshold_inkey);
-    config_threshold_amount = CONFIG_THRESHOLD_AMOUNT;
-    Serial.println("Threshold amount: " + config_threshold_amount);
+    String threshold_amount = String(CONFIG_THRESHOLD_AMOUNT);
+    if (threshold_amount == "") {
+        config_threshold_amount = 0;
+    } else {
+        config_threshold_amount = threshold_amount.toInt();
+    }
+    Serial.println("Threshold amount: " + String(config_threshold_amount));
     String led_pin = String(CONFIG_THRESHOLD_PIN);
     config_threshold_pin = led_pin.toInt();
     Serial.println("Threshold pin: " + String(config_threshold_pin));
@@ -67,7 +67,12 @@ void setupConfig(){
     config_password = getJsonValue(doc, "config_password", CONFIG_PASSWORD);
     config_device_string = getJsonValue(doc, "config_device_string", CONFIG_DEVICE_STRING);
     config_threshold_inkey = getJsonValue(doc, "config_threshold_inkey", CONFIG_THRESHOLD_INKEY);
-    config_threshold_amount = getJsonValue(doc, "config_threshold_amount", CONFIG_THRESHOLD_AMOUNT);
+    String threshold_amount = getJsonValue(doc, "config_threshold_amount", CONFIG_THRESHOLD_AMOUNT);
+    if (threshold_amount == "") {
+        config_threshold_amount = 0;
+    } else {
+        config_threshold_amount = threshold_amount.toInt();
+    }
     String led_pin = getJsonValue(doc, "config_threshold_pin", CONFIG_THRESHOLD_PIN);
     config_threshold_pin = led_pin.toInt();
     Serial.println("Threshold pin: " + String(config_threshold_pin));

@@ -17,23 +17,33 @@ int uidLength = 22;
 
 bool paid;
 long thresholdSum = 0;
+String payloadStr = "";
 
 WebSocketsClient webSocket;
 
 void setup() {
     Serial.begin(115200);
+    #ifdef TDISPLAY
+    setupTFT();
+    #endif
     setupConfig();
     setupWifi();
 
     pinMode(2, OUTPUT); // To blink on board LED
-                        //
+
+    if (config_device_string == "") {
+        Serial.println("No device string configured!");
+        printTFT("No device string!", 21, 95);
+        return;
+    }
+
     String deviceId = config_device_string.substring(0, uidLength);
-    String lnbitsServer = config_device_string.substring(uidLength + 1);
+    String lnbitsServer = config_device_string;
 
     if (config_threshold_amount != 0) { // Use in threshold mode
         Serial.println("Using THRESHOLD mode");
         Serial.println("Connecting to websocket: " + lnbitsServer + apiUrl + config_threshold_inkey);
-        webSocket.beginSSL(lnbitsServer, 443, apiUrl + thresholdInkey);
+        webSocket.beginSSL(lnbitsServer, 443, apiUrl + config_threshold_inkey);
     } else { // Use in normal mode
         Serial.println("Using NORMAL mode");
         Serial.println("Connecting to websocket: " + lnbitsServer + apiUrl + deviceId);
@@ -54,12 +64,12 @@ void loop() {
             if (config_threshold_amount != 0) {
                 // If in threshold mode we check the "balance" pushed by the
                 // websocket and use the pin/time preset
-                executeThreshold();
+                // executeThreshold();
             } else {
                 // If in normal mode we use the pin/time pushed by the websocket
                 // pin-time format
-                String pin = payloadStr.substring(0, payloadStr.indexOf('-')).toInt();
-                String time = payloadStr.substring(payloadStr.indexOf('-') + 1).substring(0, payloadStr.indexOf('-')).toInt();
+                int pin = payloadStr.substring(0, payloadStr.indexOf('-')).toInt();
+                int time = payloadStr.substring(payloadStr.indexOf('-') + 1).substring(0, payloadStr.indexOf('-')).toInt();
                 Serial.println("Executing parsed payload:");
                 Serial.println("Pin: " + String(pin));
                 Serial.println("Time: " + String(time));
@@ -73,39 +83,41 @@ void loop() {
     paid = false;
 }
 
-void executeThreshold() {
-    StaticJsonDocument<1900> doc;
-    DeserializationError error = deserializeJson(doc, payloadStr);
-    if (error) {
-        Serial.print("deserializeJson() failed: ");
-        Serial.println(error.c_str());
-        return;
-    }
-    thresholdSum = thresholdSum + doc["payment"]["amount"];
-    Serial.println("thresholdSum: " + String(thresholdSum));
-    if (thresholdSum >= (config_threshold_amount * 1000)) {
-        pinMode(config_threshold_pin, OUTPUT);
-        digitalWrite(config_threshold_pin, HIGH);
-        delay(config_threshold_time);
-        digitalWrite(config_threshold_pin, LOW);
-        thresholdSum = 0;
-    }
-}
+// void executeThreshold() {
+//     StaticJsonDocument<1900> doc;
+//     DeserializationError error = deserializeJson(doc, payloadStr);
+//     if (error) {
+//         Serial.print("deserializeJson() failed: ");
+//         Serial.println(error.c_str());
+//         return;
+//     }
+//     thresholdSum = thresholdSum + doc["payment"]["amount"].toInt();
+//     Serial.println("thresholdSum: " + String(thresholdSum));
+//     if (thresholdSum >= (config_threshold_amount * 1000)) {
+//         pinMode(config_threshold_pin, OUTPUT);
+//         digitalWrite(config_threshold_pin, HIGH);
+//         delay(config_threshold_time);
+//         digitalWrite(config_threshold_pin, LOW);
+//         thresholdSum = 0;
+//     }
+// }
 
 //////////////////WEBSOCKET///////////////////
 void webSocketEvent(WStype_t type, uint8_t *payload, size_t length) {
     switch (type) {
         case WStype_DISCONNECTED:
             Serial.printf("[WebSocket] Disconnected!\n");
+            printTFT("No Websocket!", 21, 95);
             break;
         case WStype_CONNECTED:
             Serial.printf("[WebSocket] Connected to url: %s\n", payload);
-            webSocket.sendTXT("Connected"); // send message to server when Connected
+            // send message to server when Connected
+            webSocket.sendTXT("Connected");
+            printTFT("Websocket connected!", 21, 95);
             break;
         case WStype_TEXT:
             payloadStr = (char *)payload;
             payloadStr.replace(String("'"), String('"'));
-            payloadStr.toLowerCase();
             Serial.println("Received data from socket: " + payloadStr);
             paid = true;
         case WStype_ERROR:
