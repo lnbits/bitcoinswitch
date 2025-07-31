@@ -11,7 +11,7 @@
 // device specific configuration / defaults
 #define CONFIG_SSID "wifissid"
 #define CONFIG_PASSWORD "wifipass"
-#define CONFIG_DEVICE_STRING "wss://demo.b1tco1n.org/api/v1/ws/XXXXXXXXXXXXXXXXXXXXXX"
+#define CONFIG_DEVICE_STRING "" // LNbits device string
 #define CONFIG_THRESHOLD_INKEY ""  // Invoice/read key of LNbits wallet
 #define CONFIG_THRESHOLD_AMOUNT ""  // In sats
 #define CONFIG_THRESHOLD_PIN ""  // GPIO pin
