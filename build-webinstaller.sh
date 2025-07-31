@@ -1,6 +1,6 @@
 #!/bin/sh
 PROJECT_NAME=bitcoinSwitch
-RELEASE=https://github.com/lnbits/hardware-installer/releases/download
+RELEASE=https://github.com/lnbits/bitcoinswitch/releases/download
 INSTALLER_REPO=https://github.com/lnbits/hardware-installer
 INSTALLER_PATH=./hardware-installer/public/firmware
 
