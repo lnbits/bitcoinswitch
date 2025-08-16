@@ -17,13 +17,13 @@ int uidLength = 22;
 
 bool paid;
 long thresholdSum = 0;
-String payloadStr = "";
 
 WebSocketsClient webSocket;
 
 void setup() {
     Serial.begin(115200);
-    #ifdef TDISPLAY
+    // Serial.setDebugOutput(true);
+    #ifdef TFT
     setupTFT();
     #endif
     setupConfig();
@@ -64,34 +64,38 @@ void setup() {
 
 void loop() {
     loopWifi();
-    digitalWrite(2, LOW);
-    payloadStr = "";
-    delay(1000);
-    while (paid == false) { // loop and wait for payment
-        webSocket.loop();
-        if (paid) {
-            if (config_threshold_amount != 0) {
-                // If in threshold mode we check the "balance" pushed by the
-                // websocket and use the pin/time preset
-                // executeThreshold();
-            } else {
-                // If in normal mode we use the pin/time pushed by the websocket
-                // pin-time format
-                int pin = payloadStr.substring(0, payloadStr.indexOf('-')).toInt();
-                int time = payloadStr.substring(payloadStr.indexOf('-') + 1).substring(0, payloadStr.indexOf('-')).toInt();
-                Serial.println("Executing parsed payload:");
-                Serial.println("Pin: " + String(pin));
-                Serial.println("Time: " + String(time));
-                pinMode(pin, OUTPUT);
-                digitalWrite(pin, HIGH);
-                flashTFT();
-                delay(time);
-                digitalWrite(pin, LOW);
-                clearTFT();
-            }
-        }
-    }
-    paid = false;
+    webSocket.loop();
+}
+
+void executePayment(uint8_t *payload) {
+  String payloadStr = String((char *)payload);
+
+  // format: {pin-time}
+  int pin = payloadStr.substring(0, payloadStr.indexOf('-')).toInt();
+  int time = payloadStr.substring(payloadStr.indexOf('-') + 1).toInt();
+
+  Serial.println("[WebSocket] received pin: " + String(pin) + ", duration: " + String(time));
+
+  if (config_threshold_amount != 0) {
+      // If in threshold mode we check the "balance" pushed by the
+      // websocket and use the pin/time preset
+      // executeThreshold();
+      return; // Threshold mode not implemented yet
+  }
+
+  flashTFT();
+  printTFT("Payment received!", 21, 15);
+  printTFT("Pin: " + String(pin), 21, 35);
+  printTFT("Time: " + String(time), 21, 55);
+
+  // the magic happens here
+  pinMode(pin, OUTPUT);
+  digitalWrite(pin, HIGH);
+  delay(time);
+  digitalWrite(pin, LOW);
+
+  clearTFT();
+  printTFT("BitcoinSwitch", 21, 21);
 }
 
 // void executeThreshold() {
@@ -116,8 +120,12 @@ void loop() {
 //////////////////WEBSOCKET///////////////////
 void webSocketEvent(WStype_t type, uint8_t *payload, size_t length) {
     switch (type) {
+        case WStype_ERROR:
+            Serial.printf("[WebSocket] Error: %s\n", payload);
+            printTFT("Websocket error!", 21, 95);
+            break;
         case WStype_DISCONNECTED:
-            Serial.printf("[WebSocket] Disconnected!\n");
+            Serial.println("[WebSocket] Disconnected!\n");
             printTFT("No Websocket!", 21, 95);
             break;
         case WStype_CONNECTED:
@@ -127,15 +135,25 @@ void webSocketEvent(WStype_t type, uint8_t *payload, size_t length) {
             printTFT("WS connected!", 21, 95);
             break;
         case WStype_TEXT:
-            payloadStr = (char *)payload;
-            payloadStr.replace(String("'"), String('"'));
-            Serial.println("Received data from socket: " + payloadStr);
-            paid = true;
-        case WStype_ERROR:
+            executePayment(payload);
+            break;
+        case WStype_BIN:
+            Serial.printf("[WebSocket] Received binary data: %s\n", payload);
+            break;
         case WStype_FRAGMENT_TEXT_START:
+            break;
         case WStype_FRAGMENT_BIN_START:
+            break;
         case WStype_FRAGMENT:
+            break;
         case WStype_FRAGMENT_FIN:
+            break;
+        case WStype_PING:
+            Serial.printf("[WebSocket] Ping!\n");
+            // pong will be sent automatically
+            break;
+        case WStype_PONG:
+            Serial.printf("[WebSocket] Pong!\n");
             break;
     }
 }

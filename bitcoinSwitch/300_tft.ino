@@ -13,6 +13,7 @@ void setupTFT() {
   Serial.println("TFT pin BL: " + String(TFT_BL));
   tft.setRotation(1);
   tft.invertDisplay(true);
+  tft.fillScreen(TFT_BLACK);
 }
 void printTFT(String message, int x, int y) {
   tft.setTextSize(2);
@@ -24,7 +25,7 @@ void clearTFT() {
   tft.fillScreen(TFT_BLACK);
 }
 void flashTFT() {
-  tft.fillScreen(TFT_WHITE);
+  tft.fillScreen(TFT_GREEN);
 }
 #else
 void printTFT(String message, int x, int y) {}
