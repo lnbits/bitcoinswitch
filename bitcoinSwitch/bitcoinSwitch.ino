@@ -37,17 +37,26 @@ void setup() {
         return;
     }
 
-    String deviceId = config_device_string.substring(0, uidLength);
-    String lnbitsServer = config_device_string;
+    if (!config_device_string.startsWith("wss://")) {
+        Serial.println("Device string does not start with wss://");
+        printTFT("no wss://!", 21, 95);
+        return;
+    }
+
+    String cleaned_device_string = config_device_string.substring(6); // Remove wss://
+    String host = cleaned_device_string.substring(0, cleaned_device_string.indexOf('/'));
+    String apiPath = cleaned_device_string.substring(cleaned_device_string.indexOf('/'));
+    Serial.println("Websocket host: " + host);
+    Serial.println("Websocket API Path: " + apiPath);
 
     if (config_threshold_amount != 0) { // Use in threshold mode
         Serial.println("Using THRESHOLD mode");
-        Serial.println("Connecting to websocket: " + lnbitsServer + apiUrl + config_threshold_inkey);
-        webSocket.beginSSL(lnbitsServer, 443, apiUrl + config_threshold_inkey);
+        Serial.println("Connecting to websocket: " + host + apiUrl + config_threshold_inkey);
+        webSocket.beginSSL(host, 443, apiUrl + config_threshold_inkey);
     } else { // Use in normal mode
         Serial.println("Using NORMAL mode");
-        Serial.println("Connecting to websocket: " + lnbitsServer + apiUrl + deviceId);
-        webSocket.beginSSL(lnbitsServer, 443, apiUrl + deviceId);
+        Serial.println("Connecting to websocket: " + host + apiPath);
+        webSocket.beginSSL(host, 443, apiPath);
     }
     webSocket.onEvent(webSocketEvent);
     webSocket.setReconnectInterval(1000);
@@ -75,8 +84,10 @@ void loop() {
                 Serial.println("Time: " + String(time));
                 pinMode(pin, OUTPUT);
                 digitalWrite(pin, HIGH);
+                flashTFT();
                 delay(time);
                 digitalWrite(pin, LOW);
+                clearTFT();
             }
         }
     }
@@ -113,7 +124,7 @@ void webSocketEvent(WStype_t type, uint8_t *payload, size_t length) {
             Serial.printf("[WebSocket] Connected to url: %s\n", payload);
             // send message to server when Connected
             webSocket.sendTXT("Connected");
-            printTFT("Websocket connected!", 21, 95);
+            printTFT("WS connected!", 21, 95);
             break;
         case WStype_TEXT:
             payloadStr = (char *)payload;

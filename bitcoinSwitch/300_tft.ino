@@ -1,4 +1,4 @@
-#ifdef TDISPLAY
+#ifdef TFT
 #include <TFT_eSPI.h>
 TFT_eSPI tft = TFT_eSPI(TFT_WIDTH, TFT_HEIGHT);
 void setupTFT() {
@@ -23,7 +23,11 @@ void printTFT(String message, int x, int y) {
 void clearTFT() {
   tft.fillScreen(TFT_BLACK);
 }
+void flashTFT() {
+  tft.fillScreen(TFT_WHITE);
+}
 #else
 void printTFT(String message, int x, int y) {}
 void clearTFT() {}
+void flashTFT() {}
 #endif
