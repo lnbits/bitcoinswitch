@@ -2,6 +2,7 @@
 
 #define BOOTUP_TIMEOUT 2 // seconds
 #define CONFIG_FILE "/elements.json"
+#define LED_PIN 2 // On board LED pin esp32-dev
 
 // uncomment if you dont want to use the configuration file
 // #define HARDCODED
@@ -17,6 +18,7 @@
 
 #ifdef HARDCODED
 void setupConfig(){
+    ledPin = LED_PIN;
     Serial.println("Setting hardcoded values...");
     config_ssid = CONFIG_SSID;
     Serial.println("SSID: " + config_ssid);
