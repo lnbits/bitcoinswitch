@@ -6,12 +6,12 @@
 #define CONFIG_FILE "/elements.json"
 
 // uncomment if you dont want to use the configuration file
-// #define HARDCODED
+#define HARDCODED
 
 // device specific configuration / defaults
-#define CONFIG_SSID "wifissid"
-#define CONFIG_PASSWORD "wifipass"
-#define CONFIG_DEVICE_STRING "" // LNbits device string
+#define CONFIG_SSID "dnilabs"
+#define CONFIG_PASSWORD "labs!!!2"
+#define CONFIG_DEVICE_STRING "wss://test.b1tco1n.org/api/v1/ws/FsviuJWbgU9GogdzMp6Tzm"
 #define CONFIG_THRESHOLD_INKEY ""  // Invoice/read key of LNbits wallet
 #define CONFIG_THRESHOLD_AMOUNT ""  // In sats
 #define CONFIG_THRESHOLD_PIN ""  // GPIO pin

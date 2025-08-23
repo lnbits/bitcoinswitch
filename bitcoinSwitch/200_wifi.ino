@@ -13,12 +13,13 @@ void setupWifi() {
     }
     Serial.println();
     Serial.println("WiFi connection etablished!");
-    printTFT("WiFi connected!", 21, 69);
+    printHome(true, false, false);
 }
 
 void loopWifi() {
     while (WiFi.status() != WL_CONNECTED) {
         Serial.println("WiFi disconnected!");
+        printHome(false, false, false);
         delay(500);
     }
 }

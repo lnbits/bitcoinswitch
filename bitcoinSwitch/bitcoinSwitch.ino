@@ -25,6 +25,7 @@ void setup() {
     // Serial.setDebugOutput(true);
     #ifdef TFT
     setupTFT();
+    printHome(false, false, false);
     #endif
     setupConfig();
     setupWifi();
@@ -68,12 +69,26 @@ void loop() {
 }
 
 void executePayment(uint8_t *payload) {
+  printTFT("Payment received!", 21, 15);
+  flashTFT();
+
+  String parts[3]; // pin, time, comment
+  // format: {pin-time-comment} where comment is optional
   String payloadStr = String((char *)payload);
+  int numParts = splitString(payloadStr, '-', parts, 3);
 
-  // format: {pin-time}
-  int pin = payloadStr.substring(0, payloadStr.indexOf('-')).toInt();
-  int time = payloadStr.substring(payloadStr.indexOf('-') + 1).toInt();
+  int pin = parts[0].toInt();
+  printTFT("Pin: " + String(pin), 21, 35);
 
+  int time = parts[1].toInt();
+  printTFT("Time: " + String(time), 21, 55);
+
+  String comment = "";
+  if (numParts == 3) {
+      comment = parts[2];
+      Serial.println("[WebSocket] received comment: " + comment);
+      printTFT("Comment: " + comment, 21, 75);
+  }
   Serial.println("[WebSocket] received pin: " + String(pin) + ", duration: " + String(time));
 
   if (config_threshold_amount != 0) {
@@ -83,19 +98,14 @@ void executePayment(uint8_t *payload) {
       return; // Threshold mode not implemented yet
   }
 
-  flashTFT();
-  printTFT("Payment received!", 21, 15);
-  printTFT("Pin: " + String(pin), 21, 35);
-  printTFT("Time: " + String(time), 21, 55);
-
   // the magic happens here
   pinMode(pin, OUTPUT);
   digitalWrite(pin, HIGH);
   delay(time);
   digitalWrite(pin, LOW);
 
-  clearTFT();
-  printTFT("BitcoinSwitch", 21, 21);
+  printHome(true, true, false);
+
 }
 
 // void executeThreshold() {
@@ -118,21 +128,22 @@ void executePayment(uint8_t *payload) {
 // }
 
 //////////////////WEBSOCKET///////////////////
+bool ping_toggle = false;
 void webSocketEvent(WStype_t type, uint8_t *payload, size_t length) {
     switch (type) {
         case WStype_ERROR:
             Serial.printf("[WebSocket] Error: %s\n", payload);
-            printTFT("Websocket error!", 21, 95);
+            printHome(true, false, false);
             break;
         case WStype_DISCONNECTED:
             Serial.println("[WebSocket] Disconnected!\n");
-            printTFT("No Websocket!", 21, 95);
+            printHome(true, false, false);
             break;
         case WStype_CONNECTED:
             Serial.printf("[WebSocket] Connected to url: %s\n", payload);
             // send message to server when Connected
             webSocket.sendTXT("Connected");
-            printTFT("WS connected!", 21, 95);
+            printHome(true, true, false);
             break;
         case WStype_TEXT:
             executePayment(payload);
@@ -150,10 +161,14 @@ void webSocketEvent(WStype_t type, uint8_t *payload, size_t length) {
             break;
         case WStype_PING:
             Serial.printf("[WebSocket] Ping!\n");
+            ping_toggle = !ping_toggle;
+            printHome(true, true, ping_toggle);
             // pong will be sent automatically
             break;
         case WStype_PONG:
+            // is not used
             Serial.printf("[WebSocket] Pong!\n");
+            printHome(true, true, true);
             break;
     }
 }

@@ -21,6 +21,41 @@ void printTFT(String message, int x, int y) {
   tft.setCursor(x, y);
   tft.println(message);
 }
+void printHome(bool wifi, bool ws, bool ping) {
+  if (ping) {
+    tft.fillScreen(TFT_BLUE);
+  } else {
+    tft.fillScreen(TFT_BLACK);
+  }
+  tft.setTextSize(2);
+  tft.setTextColor(TFT_YELLOW);
+  tft.setCursor(21, 21);
+  tft.println("BitcoinSwitch");
+  tft.setTextSize(2);
+  tft.setTextColor(TFT_WHITE);
+  if (wifi) {
+    tft.setCursor(21, 69);
+    tft.println("WiFi connected!");
+  } else {
+    tft.setCursor(21, 69);
+    tft.setTextColor(TFT_RED);
+    tft.println("No WiFi!");
+  }
+  tft.setCursor(21, 95);
+  if (ws) {
+    if (ping) {
+      tft.setTextColor(TFT_WHITE);
+      tft.println("WS ping!");
+    } else {
+      tft.setTextColor(TFT_GREEN);
+      tft.println("WS connected!");
+    }
+  }
+  else {
+    tft.setTextColor(TFT_RED);
+    tft.println("No WS!");
+  }
+}
 void clearTFT() {
   tft.fillScreen(TFT_BLACK);
 }
@@ -29,6 +64,7 @@ void flashTFT() {
 }
 #else
 void printTFT(String message, int x, int y) {}
+void printHome(String message, bool wifi, bool ws) {}
 void clearTFT() {}
 void flashTFT() {}
 #endif
