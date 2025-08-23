@@ -20,21 +20,6 @@ jobs:
         with:
           ref: main
 
-      - name: update version in repo
-        env:
-          tag: ${{ github.ref_name }}
-        run: |
-          tmp=$(mktemp)
-          jq --arg version $tag '.versions |= [$version] + .' versions.json > "$tmp" && mv "$tmp" versions.json
-          sed -i "/define VERSION/c\#define VERSION \"$tag\"" bitcoinSwitch/100_config.ino
-          git config --global user.name 'Alan Bits'
-          git config --global user.email 'alan@lnbits.com'
-          git commit -am "[CHORE] update version to $tag"
-          git push
-          git push --delete origin $tag
-          git tag -fa $tag -m "update via workflow"
-          git push --tags
-
       - name: Install Arduino CLI
         uses: arduino/setup-arduino-cli@v1
 
