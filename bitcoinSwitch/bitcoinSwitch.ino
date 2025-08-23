@@ -1,274 +1,174 @@
-///////////////////////////////////////////////////////////////////////////////////
-//         Change these variables directly in the code or use the config         //
-//  form in the web-installer https://lnbits.github.io/bitcoinswitch/installer/  //
-///////////////////////////////////////////////////////////////////////////////////
-
-String version = "0.1.1";
-
-String ssid = "null"; // 'String ssid = "ssid";' / 'String ssid = "null";'
-String wifiPassword = "null"; // 'String wifiPassword = "password";' / 'String wifiPassword = "null";'
-
-// String from the lnurlDevice plugin in LNbits lnbits.com
-String switchStr = "null"; // 'String switchStr = "ws url";' / 'String switchStr = "null";'
-
-// Change for threshold trigger only
-String thresholdInkey; // Invoice/read key for the LNbits wallet you want to watch,  'String thresholdInkey = "key";' / 'String thresholdInkey = "null";'
-long thresholdAmount; // In sats, 'long thresholdAmount = 0;' / 'long thresholdAmount = 100;'
-int thresholdPin; // GPIO pin, 'int thresholdPin = 16;' / 'int thresholdPin;'
-long thresholdTime; // Time to turn pin on, 'long thresholdTime = 2000;' / 'long thresholdTime;'
-
-///////////////////////////////////////////////////////////////////////////////////
-//                                 END of variables                              //
-///////////////////////////////////////////////////////////////////////////////////
-
-#include <WiFi.h>
-#include <FS.h>
-#include <SPIFFS.h>
 #include <ArduinoJson.h>
 #include <WebSocketsClient.h>
 
-fs::SPIFFSFS &FlashFS = SPIFFS;
-#define FORMAT_ON_FAIL true
-#define PARAM_FILE "/elements.json"
+String config_ssid;
+String config_password;
+String config_device_string;
+String config_threshold_inkey;
+int config_threshold_amount;
+int config_threshold_pin;
+int config_threshold_time;
 
-String urlPrefix = "ws://";
 String apiUrl = "/api/v1/ws/";
 
-// length of lnurldevice id
+// length of switch device id
 // 7dhdyJ9bbZNWNVPiFSdmb5
 int uidLength = 22;
 
-String payloadStr;
-String lnbitsServer;
-String deviceId;
-String dataId;
 bool paid;
-bool down = false;
 long thresholdSum = 0;
-long payment_amount = 0;
-
-// Serial config
-int portalPin = 4;
 
 WebSocketsClient webSocket;
 
-struct KeyValue {
-    String key;
-    String value;
-};
-
 void setup() {
     Serial.begin(115200);
-    Serial.println("Welcome to BitcoinSwitch, running on version: " + version);
-    bool triggerConfig = false;
+    // Serial.setDebugOutput(true);
+    #ifdef TFT
+    setupTFT();
+    printHome(false, false, false);
+    #endif
+    setupConfig();
+    setupWifi();
+
     pinMode(2, OUTPUT); // To blink on board LED
-    FlashFS.begin(FORMAT_ON_FAIL);
-    int timer = 0;
-    while (timer < 2000) {
-        digitalWrite(2, HIGH);
-        Serial.println(touchRead(portalPin));
-        if (touchRead(portalPin) < 60) {
-            triggerConfig = true;
-            timer = 5000;
-        }
 
-        timer = timer + 100;
-        delay(150);
-        digitalWrite(2, LOW);
-        delay(150);
+    if (config_device_string == "") {
+        Serial.println("No device string configured!");
+        printTFT("No device string!", 21, 95);
+        return;
     }
 
-    readFiles(); // get the saved details and store in global variables
-
-    if (triggerConfig == true || ssid == "" || ssid == "null") {
-        Serial.println("Launch serial config");
-        configOverSerialPort();
-    } else {
-        WiFi.begin(ssid.c_str(), wifiPassword.c_str());
-        Serial.print("Connecting to WiFi");
-        while (WiFi.status() != WL_CONNECTED) {
-            Serial.print(".");
-            delay(500);
-            digitalWrite(2, HIGH);
-            Serial.print(".");
-            delay(500);
-            digitalWrite(2, LOW);
-        }
+    if (!config_device_string.startsWith("wss://")) {
+        Serial.println("Device string does not start with wss://");
+        printTFT("no wss://!", 21, 95);
+        return;
     }
 
-    if (thresholdAmount != 0) { // Use in threshold mode
-        Serial.println("");
+    String cleaned_device_string = config_device_string.substring(6); // Remove wss://
+    String host = cleaned_device_string.substring(0, cleaned_device_string.indexOf('/'));
+    String apiPath = cleaned_device_string.substring(cleaned_device_string.indexOf('/'));
+    Serial.println("Websocket host: " + host);
+    Serial.println("Websocket API Path: " + apiPath);
+
+    if (config_threshold_amount != 0) { // Use in threshold mode
         Serial.println("Using THRESHOLD mode");
-        Serial.println("Connecting to websocket: " + urlPrefix + lnbitsServer + apiUrl + thresholdInkey);
-        webSocket.beginSSL(lnbitsServer, 443, apiUrl + thresholdInkey);
+        Serial.println("Connecting to websocket: " + host + apiUrl + config_threshold_inkey);
+        webSocket.beginSSL(host, 443, apiUrl + config_threshold_inkey);
     } else { // Use in normal mode
-        Serial.println("");
         Serial.println("Using NORMAL mode");
-        Serial.println("Connecting to websocket: " + urlPrefix + lnbitsServer + apiUrl + deviceId);
-        webSocket.beginSSL(lnbitsServer, 443, apiUrl + deviceId);
+        Serial.println("Connecting to websocket: " + host + apiPath);
+        webSocket.beginSSL(host, 443, apiPath);
     }
     webSocket.onEvent(webSocketEvent);
     webSocket.setReconnectInterval(1000);
 }
 
 void loop() {
-    while (WiFi.status() != WL_CONNECTED) { // check wifi again
-        Serial.println("Failed to connect");
-        delay(500);
-    }
-    digitalWrite(2, LOW);
-    payloadStr = "";
-    delay(2000);
-    while (paid == false) { // loop and wait for payment
-        webSocket.loop();
-        if (paid) {
-            if (thresholdAmount != 0) { // If in threshold mode we check the "balance" pushed by the websocket and use the pin/time preset
-                StaticJsonDocument<1900> doc;
-                DeserializationError error = deserializeJson(doc, payloadStr);
-                if (error) {
-                    Serial.print("deserializeJson() failed: ");
-                    Serial.println(error.c_str());
-                    return;
-                }
-                JsonObject payment = doc["payment"];
-                payment_amount = payment["amount"];
-                thresholdSum = thresholdSum + payment_amount;
-                Serial.println("thresholdSum: " + String(thresholdSum));
-                Serial.println("thresholdAmount: " + String((thresholdAmount * 1000)));
-                Serial.println("thresholdPin: " + String(thresholdPin));
-                if (thresholdSum >= (thresholdAmount * 1000)) {
-                    pinMode(thresholdPin, OUTPUT);
-                    digitalWrite(thresholdPin, HIGH);
-                    delay(thresholdTime);
-                    digitalWrite(thresholdPin, LOW);
-                    thresholdSum = 0;
-                }
-            } else { // If in normal mode we use the pin/time pushed by the websocket
-                pinMode(getValue(payloadStr, '-', 0).toInt(), OUTPUT);
-                digitalWrite(getValue(payloadStr, '-', 0).toInt(), HIGH);
-                delay(getValue(payloadStr, '-', 1).toInt());
-                digitalWrite(getValue(payloadStr, '-', 0).toInt(), LOW);
-            }
-        }
-    }
-    Serial.println("Paid");
-    paid = false;
+    loopWifi();
+    webSocket.loop();
 }
 
-//////////////////HELPERS///////////////////
+void executePayment(uint8_t *payload) {
+  printTFT("Payment received!", 21, 15);
+  flashTFT();
 
-String getValue(String data, char separator, int index) {
-    int found = 0;
-    int strIndex[] = {0, -1};
-    int maxIndex = data.length() - 1;
-    for (int i = 0; i <= maxIndex && found <= index; i++) {
-        if (data.charAt(i) == separator || i == maxIndex) {
-            found++;
-            strIndex[0] = strIndex[1] + 1;
-            strIndex[1] = (i == maxIndex) ? i + 1 : i;
-        }
-    }
-    return found > index ? data.substring(strIndex[0], strIndex[1]) : "";
+  String parts[3]; // pin, time, comment
+  // format: {pin-time-comment} where comment is optional
+  String payloadStr = String((char *)payload);
+  int numParts = splitString(payloadStr, '-', parts, 3);
+
+  int pin = parts[0].toInt();
+  printTFT("Pin: " + String(pin), 21, 35);
+
+  int time = parts[1].toInt();
+  printTFT("Time: " + String(time), 21, 55);
+
+  String comment = "";
+  if (numParts == 3) {
+      comment = parts[2];
+      Serial.println("[WebSocket] received comment: " + comment);
+      printTFT("Comment: " + comment, 21, 75);
+  }
+  Serial.println("[WebSocket] received pin: " + String(pin) + ", duration: " + String(time));
+
+  if (config_threshold_amount != 0) {
+      // If in threshold mode we check the "balance" pushed by the
+      // websocket and use the pin/time preset
+      // executeThreshold();
+      return; // Threshold mode not implemented yet
+  }
+
+  // the magic happens here
+  pinMode(pin, OUTPUT);
+  digitalWrite(pin, HIGH);
+  delay(time);
+  digitalWrite(pin, LOW);
+
+  printHome(true, true, false);
+
 }
 
-String getJsonValue(JsonDocument &doc, const char *name) {
-    for (JsonObject elem : doc.as<JsonArray>()) {
-        if (strcmp(elem["name"], name) == 0) {
-            String value = elem["value"].as<String>();
-            return value;
-        }
-    }
-    return ""; // return empty string if not found
-}
-
-void readFiles() {
-    File paramFile = FlashFS.open(PARAM_FILE, "r");
-    if (paramFile) {
-        StaticJsonDocument<2500> doc;
-        DeserializationError error = deserializeJson(doc, paramFile.readString());
-        if (error) {
-            Serial.print("deserializeJson() failed: ");
-            Serial.println(error.c_str());
-            return;
-        }
-        if (ssid == "null") { // check ssid is not set above
-            ssid = getJsonValue(doc, "ssid");
-            Serial.println("");
-            Serial.println("SSID used from memory");
-            Serial.println("SSID: " + ssid);
-        } else {
-            Serial.println("");
-            Serial.println("SSID hardcoded");
-            Serial.println("SSID: " + ssid);
-        }
-        if (wifiPassword == "null") { // check wifiPassword is not set above
-            wifiPassword = getJsonValue(doc, "wifipassword");
-            Serial.println("");
-            Serial.println("SSID password used from memory");
-            Serial.println("SSID password: " + wifiPassword);
-        } else {
-            Serial.println("");
-            Serial.println("SSID password hardcoded");
-            Serial.println("SSID password: " + wifiPassword);
-        }
-        if (switchStr == "null") { // check switchStr is not set above
-            switchStr = getJsonValue(doc, "socket");
-            Serial.println("");
-            Serial.println("switchStr used from memory");
-            Serial.println("switchStr: " + switchStr);
-        } else {
-            Serial.println("");
-            Serial.println("switchStr hardcoded");
-            Serial.println("switchStr: " + switchStr);
-        }
-
-        int protocolIndex = switchStr.indexOf("://");
-        if (protocolIndex == -1) {
-            Serial.println("Invalid switchStr: " + switchStr);
-            return;
-        }
-        urlPrefix = switchStr.substring(0, protocolIndex + 3);
-
-        int domainIndex = switchStr.indexOf("/", protocolIndex + 3);
-        if (domainIndex == -1) {
-            Serial.println("Invalid switchStr: " + switchStr);
-            return;
-        }
-
-        lnbitsServer = switchStr.substring(protocolIndex + 3, domainIndex);
-        apiUrl = switchStr.substring(domainIndex, switchStr.length() - uidLength);
-        deviceId = switchStr.substring(switchStr.length() - uidLength);
-
-        Serial.println("LNbits ws prefix: " + urlPrefix);
-        Serial.println("LNbits server: " + lnbitsServer);
-        Serial.println("LNbits API url: " + apiUrl);
-        Serial.println("Switch device ID: " + deviceId);
-    }
-    paramFile.close();
-}
+// void executeThreshold() {
+//     StaticJsonDocument<1900> doc;
+//     DeserializationError error = deserializeJson(doc, payloadStr);
+//     if (error) {
+//         Serial.print("deserializeJson() failed: ");
+//         Serial.println(error.c_str());
+//         return;
+//     }
+//     thresholdSum = thresholdSum + doc["payment"]["amount"].toInt();
+//     Serial.println("thresholdSum: " + String(thresholdSum));
+//     if (thresholdSum >= (config_threshold_amount * 1000)) {
+//         pinMode(config_threshold_pin, OUTPUT);
+//         digitalWrite(config_threshold_pin, HIGH);
+//         delay(config_threshold_time);
+//         digitalWrite(config_threshold_pin, LOW);
+//         thresholdSum = 0;
+//     }
+// }
 
 //////////////////WEBSOCKET///////////////////
-
+bool ping_toggle = false;
 void webSocketEvent(WStype_t type, uint8_t *payload, size_t length) {
     switch (type) {
+        case WStype_ERROR:
+            Serial.printf("[WebSocket] Error: %s\n", payload);
+            printHome(true, false, false);
+            break;
         case WStype_DISCONNECTED:
-            Serial.printf("[WSc] Disconnected!\n");
+            Serial.println("[WebSocket] Disconnected!\n");
+            printHome(true, false, false);
             break;
         case WStype_CONNECTED:
-            Serial.printf("[WSc] Connected to url: %s\n", payload);
-            webSocket.sendTXT("Connected"); // send message to server when Connected
+            Serial.printf("[WebSocket] Connected to url: %s\n", payload);
+            // send message to server when Connected
+            webSocket.sendTXT("Connected");
+            printHome(true, true, false);
             break;
         case WStype_TEXT:
-            payloadStr = (char *)payload;
-            payloadStr.replace(String("'"), String('"'));
-            payloadStr.toLowerCase();
-            Serial.println("Received data from socket: " + payloadStr);
-            paid = true;
-        case WStype_ERROR:
+            executePayment(payload);
+            break;
+        case WStype_BIN:
+            Serial.printf("[WebSocket] Received binary data: %s\n", payload);
+            break;
         case WStype_FRAGMENT_TEXT_START:
+            break;
         case WStype_FRAGMENT_BIN_START:
+            break;
         case WStype_FRAGMENT:
+            break;
         case WStype_FRAGMENT_FIN:
+            break;
+        case WStype_PING:
+            Serial.printf("[WebSocket] Ping!\n");
+            ping_toggle = !ping_toggle;
+            printHome(true, true, ping_toggle);
+            // pong will be sent automatically
+            break;
+        case WStype_PONG:
+            // is not used
+            Serial.printf("[WebSocket] Pong!\n");
+            printHome(true, true, true);
             break;
     }
 }

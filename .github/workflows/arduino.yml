@@ -8,15 +8,8 @@ jobs:
       matrix:
         fqbn:
           - esp32:esp32:esp32
-          # - esp32:esp32:esp32s3
-          # - esp32:esp32:esp32c3
-          # future bluetooth chips
-          #- esp32:esp32:esp32c2
-          #- esp32:esp32:esp32c6
-          #- esp32:esp32:esp32h2
-
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: arduino/compile-sketches@v1
         with:
           enable-deltas-report: true
@@ -30,10 +23,11 @@ jobs:
           libraries: |
             - name: WebSockets
             - name: ArduinoJson
+            - name: TFT_eSPI
           cli-compile-flags: |
             - --warnings="none"
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         with:
           name: sketches-reports
           path: sketches-reports
@@ -46,7 +40,7 @@ jobs:
     steps:
       # This step is needed to get the size data produced by the compile jobs
       - name: Download sketches reports artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: sketches-reports
           path: sketches-reports
