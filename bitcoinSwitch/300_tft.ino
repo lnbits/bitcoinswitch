@@ -64,7 +64,7 @@ void flashTFT() {
 }
 #else
 void printTFT(String message, int x, int y) {}
-void printHome(String message, bool wifi, bool ws) {}
+void printHome(bool wifi, bool ws, bool ping) {}
 void clearTFT() {}
 void flashTFT() {}
 #endif
