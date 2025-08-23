@@ -11,13 +11,6 @@ int config_threshold_time;
 
 String apiUrl = "/api/v1/ws/";
 
-// length of switch device id
-// 7dhdyJ9bbZNWNVPiFSdmb5
-int uidLength = 22;
-
-bool paid;
-long thresholdSum = 0;
-
 WebSocketsClient webSocket;
 
 void setup() {
@@ -108,6 +101,7 @@ void executePayment(uint8_t *payload) {
 
 }
 
+// long thresholdSum = 0;
 // void executeThreshold() {
 //     StaticJsonDocument<1900> doc;
 //     DeserializationError error = deserializeJson(doc, payloadStr);
