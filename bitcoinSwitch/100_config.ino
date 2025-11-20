@@ -1,4 +1,4 @@
-#define VERSION "v1.0.0"
+#define VERSION "v1.0.1"
 
 #define BOOTUP_TIMEOUT 2 // seconds
 #define CONFIG_FILE "/elements.json"
