@@ -21,5 +21,6 @@ void loopWifi() {
         Serial.println("WiFi disconnected!");
         printHome(false, false, false);
         delay(500);
+        setupWifi();
     }
 }
