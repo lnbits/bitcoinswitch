@@ -9,7 +9,8 @@ int config_threshold_amount;
 int config_threshold_pin;
 int config_threshold_time;
 
-String apiUrl = "/api/v1/ws/";
+int ledPin;
+
 
 WebSocketsClient webSocket;
 
@@ -22,8 +23,6 @@ void setup() {
     #endif
     setupConfig();
     setupWifi();
-
-    pinMode(2, OUTPUT); // To blink on board LED
 
     if (config_device_string == "") {
         Serial.println("No device string configured!");
@@ -45,8 +44,8 @@ void setup() {
 
     if (config_threshold_amount != 0) { // Use in threshold mode
         Serial.println("Using THRESHOLD mode");
-        Serial.println("Connecting to websocket: " + host + apiUrl + config_threshold_inkey);
-        webSocket.beginSSL(host, 443, apiUrl + config_threshold_inkey);
+        Serial.println("Connecting to websocket: " + host + apiPath + config_threshold_inkey);
+        webSocket.beginSSL(host, 443, apiPath + config_threshold_inkey);
     } else { // Use in normal mode
         Serial.println("Using NORMAL mode");
         Serial.println("Connecting to websocket: " + host + apiPath);
@@ -84,7 +83,7 @@ void executePayment(uint8_t *payload) {
   }
   Serial.println("[WebSocket] received pin: " + String(pin) + ", duration: " + String(time));
 
-  if (config_threshold_amount != 0) {
+  if (config_threshold_amount > 0) {
       // If in threshold mode we check the "balance" pushed by the
       // websocket and use the pin/time preset
       // executeThreshold();
@@ -93,9 +92,13 @@ void executePayment(uint8_t *payload) {
 
   // the magic happens here
   pinMode(pin, OUTPUT);
+  pinMode(ledPin, OUTPUT);
+
   digitalWrite(pin, HIGH);
+  digitalWrite(ledPin, HIGH);
   delay(time);
   digitalWrite(pin, LOW);
+  digitalWrite(ledPin, LOW);
 
   printHome(true, true, false);
 
