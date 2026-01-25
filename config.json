@@ -1,0 +1,47 @@
+{
+  "id": "bitcoinswitch",
+  "version": "1.2.0",
+  "name": "Bitcoin Switch",
+  "repo": "https://github.com/lnbits/bitcoinswitch-extension",
+  "short_description": "Turn things on with bitcoin lightning",
+  "description": "",
+  "tile": "/bitcoinswitch/static/image/icon.png",
+  "min_lnbits_version": "1.4.0",
+  "contributors": [
+    {
+      "name": "Ben Arc",
+      "uri": "mailto:ben@lnbits.com",
+      "role": "Developer"
+    },
+    {
+      "name": "BlackCoffee",
+      "uri": "https://github.com/blackcoffee",
+      "role": "Developer"
+    },
+    {
+      "name": "Vlad Stan",
+      "uri": "https://github.com/motorina1",
+      "role": "Developer"
+    },
+    {
+      "name": "dni",
+      "uri": "https://github.com/dni",
+      "role": "Developer"
+    }
+  ],
+  "images": [
+    {
+      "uri": "https://raw.githubusercontent.com/lnbits/bitcoinswitch-extension/main/static/image/1.png"
+    },
+    {
+      "uri": "https://raw.githubusercontent.com/lnbits/bitcoinswitch-extension/main/static/image/2.png"
+    }
+  ],
+  "description_md": "https://raw.githubusercontent.com/lnbits/bitcoinswitch-extension/main/description.md",
+  "terms_and_conditions_md": "https://raw.githubusercontent.com/lnbits/bitcoinswitch-extension/main/toc.md",
+  "license": "MIT",
+  "paid_features": "",
+  "tags": ["Hardware", "IoT"],
+  "donate": "",
+  "hidden": false
+}

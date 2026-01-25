@@ -1,3 +1,19 @@
+<a href="https://lnbits.com" target="_blank" rel="noopener noreferrer">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://i.imgur.com/QE6SIrs.png">
+    <img src="https://i.imgur.com/fyKPgVT.png" alt="LNbits" style="width:280px">
+  </picture>
+</a>
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-success?logo=open-source-initiative&logoColor=white)](./LICENSE)
+[![Built for LNbits](https://img.shields.io/badge/Built%20for-LNbits-4D4DFF?logo=lightning&logoColor=white)](https://github.com/lnbits/lnbits)
+
+# Bitcoin Switch - [LNbits](https://lnbits.com) extension
+
+Turn things on with bitcoin. Control relays, motors, or any electronic device by receiving lightning payments. Perfect for vending machines, access control, or any pay-to-use scenario.
+
+Flash your own device using the web installer at [bitcoinswitch.lnbits.com](https://bitcoinswitch.lnbits.com)
+
 <img width="600" src="https://user-images.githubusercontent.com/33088785/166832680-600ed270-cbc9-4749-82f1-c1853b242329.png"><img width="600" src="https://user-images.githubusercontent.com/33088785/166829474-a28ca2b7-dd3e-46d4-89d3-8a10bf1d3fad.png">
 
 # Clicky, the Bitcoin Switch
@@ -97,3 +113,34 @@ uploading
 ```console
 arduino-cli upload --fqbn esp32:esp32:esp32 --input-dir build -p /dev/ttyUSB1
 ```
+
+## How it works
+
+The extension creates LNURL endpoints that trigger GPIO pins on ESP32 hardware when payments are received. You define how long the switch stays on and what amount triggers it.
+
+## Features
+
+- Control relays and GPIO pins via lightning payments
+- Configurable activation duration
+- Multiple switch configurations per device
+- Works with any ESP32-based hardware
+
+## Usage
+
+1. Enable the extension in LNbits
+2. Create a switch and configure the amount and duration
+3. Flash your ESP32 using the web installer
+4. Connect your relay or device to the configured GPIO pin
+5. Share the payment link or QR code
+
+## Resources
+
+- [Video tutorials](https://www.youtube.com/@makerbits7700)
+- [Support group on Telegram](https://t.me/makerbits)
+
+## Powered by LNbits
+
+[LNbits](https://lnbits.com) is a free and open-source lightning accounts system.
+
+[![Visit LNbits Shop](https://img.shields.io/badge/Visit-LNbits%20Shop-7C3AED?logo=shopping-cart&logoColor=white&labelColor=5B21B6)](https://shop.lnbits.com/)
+[![Try myLNbits SaaS](https://img.shields.io/badge/Try-myLNbits%20SaaS-2563EB?logo=lightning&logoColor=white&labelColor=1E40AF)](https://my.lnbits.com/login)
