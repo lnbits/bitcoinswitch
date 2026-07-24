@@ -10,8 +10,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        fqbn:
-          - esp32:esp32:esp32
+        include:
+          - board: esp32
+            fqbn: esp32:esp32:esp32
+          - board: esp32-s3
+            fqbn: esp32:esp32:esp32s3:USBMode=hwcdc,CDCOnBoot=cdc
     steps:
       - uses: actions/checkout@v4
       - uses: arduino/compile-sketches@v1
@@ -33,7 +36,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: sketches-reports
+          name: sketches-reports-${{ matrix.board }}
           path: sketches-reports
 
 
@@ -46,7 +49,8 @@ jobs:
       - name: Download sketches reports artifact
         uses: actions/download-artifact@v4
         with:
-          name: sketches-reports
+          pattern: sketches-reports-*
+          merge-multiple: true
           path: sketches-reports
 
       - uses: arduino/report-size-deltas@v1

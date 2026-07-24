@@ -6,11 +6,12 @@ void setupWifi() {
     while (WiFi.status() != WL_CONNECTED) {
         Serial.print(".");
         delay(500);
-        digitalWrite(2, HIGH);
+        setStatusLed(true);
         Serial.print(".");
         delay(500);
-        digitalWrite(2, LOW);
+        setStatusLed(false);
     }
+    setStatusLed(false);
     Serial.println();
     Serial.println("WiFi connection etablished!");
     printHome(true, false, false);

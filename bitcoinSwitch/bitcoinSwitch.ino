@@ -1,6 +1,18 @@
 #include <ArduinoJson.h>
 #include <WebSocketsClient.h>
 
+#ifndef STATUS_LED_PIN
+#ifdef LED_BUILTIN
+#define STATUS_LED_PIN LED_BUILTIN
+#else
+#define STATUS_LED_PIN -1
+#endif
+#endif
+
+#ifndef STATUS_LED_ON
+#define STATUS_LED_ON HIGH
+#endif
+
 String config_ssid;
 String config_password;
 String config_device_string;
@@ -13,17 +25,29 @@ String apiUrl = "/api/v1/ws/";
 
 WebSocketsClient webSocket;
 
+void setupStatusLed() {
+#if STATUS_LED_PIN >= 0
+    pinMode(STATUS_LED_PIN, OUTPUT);
+    digitalWrite(STATUS_LED_PIN, !STATUS_LED_ON);
+#endif
+}
+
+void setStatusLed(bool enabled) {
+#if STATUS_LED_PIN >= 0
+    digitalWrite(STATUS_LED_PIN, enabled ? STATUS_LED_ON : !STATUS_LED_ON);
+#endif
+}
+
 void setup() {
     Serial.begin(115200);
     // Serial.setDebugOutput(true);
+    setupStatusLed();
     #ifdef TFT
     setupTFT();
     printHome(false, false, false);
     #endif
     setupConfig();
     setupWifi();
-
-    pinMode(2, OUTPUT); // To blink on board LED
 
     if (config_device_string == "") {
         Serial.println("No device string configured!");

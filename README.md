@@ -48,7 +48,8 @@ Have a look at the [LNbits shop](https://shop.lnbits.com/product-category/hardwa
   </tr>
 </table>
 
-Once flashed, press GPIO4 in few seconds of ESP32 booting up to be able to config.
+To reconfigure an already-set-up device, connect the serial configurator during
+the first two seconds after reset.
 
 
 Got questions ? Join us <a href="https://t.me/lnbits">t.me/lnbits</a>, <a href="https://t.me/makerbits">t.me/makerbits</a>
@@ -72,11 +73,12 @@ Got questions ? Join us <a href="https://t.me/lnbits">t.me/lnbits</a>, <a href="
 ### Development
 build with arduino-cli
 ```console
-sh build.sh
+sh build.sh esp32
+sh build.sh esp32-s3
 ```
 build webinstaller, fetch main assets from lnbits.github.io
 ```console
-sh build-installer.sh
+sh build-webinstaller.sh
 ```
 start preview
 ```console
@@ -97,3 +99,32 @@ uploading
 ```console
 arduino-cli upload --fqbn esp32:esp32:esp32 --input-dir build -p /dev/ttyUSB1
 ```
+
+### ESP32-S3
+
+The generic ESP32-S3 target uses the chip's native USB CDC port, so the
+serial configuration protocol remains available over the same USB connection:
+
+```console
+sh install.sh
+sh build.sh esp32-s3
+arduino-cli upload \
+  --fqbn "esp32:esp32:esp32s3:USBMode=hwcdc,CDCOnBoot=cdc" \
+  --input-dir build \
+  -p /dev/ttyACM0
+```
+
+You can also build, upload, and open the serial monitor in one command:
+
+```console
+sh debug.sh /dev/ttyACM0 esp32-s3
+```
+
+Relay GPIO numbers still come from the LNbits device string. On a generic
+ESP32-S3 board, avoid GPIO 0, 3, 45, and 46 (strapping pins), and avoid GPIO
+19 and 20 while using native USB. Check your particular board's pinout because
+integrated flash, PSRAM, displays, or RGB LEDs can reserve additional pins.
+
+The WiFi status indicator now uses the board's `LED_BUILTIN` definition instead
+of assuming GPIO 2. A board without a usable built-in LED can compile with
+`-DSTATUS_LED_PIN=-1`; active-low LEDs can use `-DSTATUS_LED_ON=LOW`.

@@ -3,7 +3,8 @@
 
 ### Flash and configure from browser!
 
-> Once flashed, press GPIO4 in few seconds of ESP32 booting up to be able to config
+> To reconfigure an already-set-up device, connect the serial configurator
+> during the first two seconds after reset.
 
    <table>
   <tr>
